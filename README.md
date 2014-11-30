@@ -36,16 +36,51 @@ port 22 -> port 1710 [5]
 ```
 - Sau khi thay đổi ta cấu update firewall:
 ```
-iptables -A INPUT -m state --state NEW -m tcp -p tcp --dport 2022 -j ACCEPT
+iptables -A INPUT -m state --state NEW -m tcp -p tcp --dport 1710 -j ACCEPT
 ```
 - Khởi động lại dịch  vụ ssh:
 ```
 service ssh restart
 ```
-
+- Bây giờ bạn ssh vào máy chủ thông qua cú pháp sau:
+```
+ssh root@<ip_server> -p port
+```
+ví dụ : Mình ssh vào máy chủ 172.16.69.145 với tài khoản longnt
+```
+ssh longnt@172.16.69.145 -p 1710 
+```
 2. Cấm truy cập vào ssh bằng tài khoản root:
 
 - Tài khoản root là tài khoản có toàn quyền trong hệ điều hành Linux. Chính vì thế khi attacker có được tài khoản root sẽ nguy hiểm cho hệ thống.
+
+Để cấm root đăng nhập thông qua ssh. Ta vào file cấu hình ssh và sửa như sau:
+
+```
+/etc/ssh/sshd_config
+PermitRootLogin yes -> PermitRootLogin no [28]
+```
+- Khởi động lại dịch vụ ssh :
+```
+service ssh restart
+```
+
+Lưu ý : Bạn lên đăt mật khẩu root khác với mật khẩu của user.
+
+- Nhưng có trường hợp này sẽ xảy ra và nó đã xảy ra với hệ thống của mình. Cấm truy cập bằng root nhưng một số ip được phép truy cập bằng root thì sao?.
+- Vậy thì ta lại chỉ cho một số ip được quyền truy cập bằng root:
+
+Vào trong file cấu hình ssh và thêm vào như sau:
+```
+etc/ssh/sshd_config
+
+AllowUsers root<ip1>,root<ip2>
+```
+Khởi động lại dịch vụ ssh :
+```
+service ssh restart
+```
+
 
 
 
