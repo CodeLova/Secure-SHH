@@ -22,6 +22,7 @@ Trong bài viết này mình chỉ đi sâu vào nâng cao bảo mật cho SSH.p
 ##### II. Cấu hình nâng cao ssh:
 
 1. Đổi port mặc định khi truy cập vào ssh:
+
 - Mặc định ssh sẽ sử dụng port 22 để cho phép truy cập vào hệ thống. Như vậy sẽ không an toàn cho hệ thống của ta, nên chuyển sang một port khác.
 
 - Đăng nhập vào bằng tài khoản root:
@@ -64,7 +65,6 @@ PermitRootLogin yes -> PermitRootLogin no [28]
 ```
 service ssh restart
 ```
-
 Lưu ý : Bạn lên đăt mật khẩu root khác với mật khẩu của user.
 
 - Nhưng có trường hợp này sẽ xảy ra và nó đã xảy ra với hệ thống của mình. Cấm truy cập bằng root nhưng một số ip được phép truy cập bằng root thì sao?.
@@ -80,7 +80,75 @@ Khởi động lại dịch vụ ssh :
 ```
 service ssh restart
 ```
+3. Cũng giống như trường hợp trên nhưng là trường hợp cấm không cho một user nào đó có quyền truy cập vào bằng ssh:
 
+- Bạn vào file cấu hinh ssh và thêm như sau:
+```
+/etc/ssh/sshd_config
+
+DisablesUsers  <Tenuser>,[<Tenuser@ip>]
+```
+ví dụ: Ở đây mình cấm không cho user longnt truy cập thông qua ssh :
+```
+DisablesUsers longnt
+```
+- Khởi động lại dịch vụ ssh :
+```
+service ssh restart
+```
+- Hoặc ta cũng có thể sử dụng iptables để cấm một số ip truy cập vào hệ thống:
+```
+iptables -A INPUT -p tcp -s 172.16.69.15  --dport 22 -j DROP
+```
+
+4. Hạn chế quyền của user  được sử dụng khi được quyền ssh vào hệ thống:
+- Như bạn đã biết user có quyền sudo để sử dụng.Nhưng như thế khi attacker vào được hệ thống sẽ sử dụng  "lỗi hổng" này để phá hoại hệ thống.
+- Như vậy ta cần  giới hạn quyền cho user.
+
+- Quyền  hạn của các user được  cấu hình trong file "visudo". Ta vào đó và cấp quyền cho users
+Phần này có lẽ ta nên đi vào ví dụ cho dễ hiểu:
+
+Lần đầu mở file sudoers ta thấy dòng gợi ý sau:
+```
+root  ALL=(ALL)  ALL
+```
+-Ý nghĩa của 4 trường:
+```
+root:  User root được áp dụng
+ALL: Nơi mà các dòng lệnh sudo được thực thi
+(ALL): Trường này chỉ rõ ra user root có thể hoạt động như tất cả các user khác
+ALL: User root có thể thực thi tất cả các câu lệnh
+```
+- Cú pháp cơ bản cho một user thường:
+```
+USER PLACES=(AS_USER) [NOPASSWD:] COMMAND
+```
+- Ý nghĩa của các trường :
+```
+USER : User đã tồn tại, ID user, User_Alias
+PLACES: Nơi mà các câu lệnh được thực thi
+(AS_USER): Hoạt động giống như những user này
+COMMAND: Tập hợp lệnh mà user có thể thực thi
+[NOPASSWD]:  Người dùng có thể chạy lênh mà không cần nhập mật khẩu
+```
+- Ví dụ : Bây giờ để đảm bảo an toàn cho hệ thống mình cấm toàn quyền sudo đã cấp cho user longnt:
+
+Bạn vào file visudo và làm như sau:
+```
+longnt ALL=(ALL)
+```
+Như vậy , longnt không có quyền hạn sudo trong việc thực thi hệ thống.
+
+5.Nếu ai đó đang cố thử password để truy cập vào  hệ thống.Tránh tình huống xấu nhất có thể xẩy ra ta sẽ log ssh khi họ cố gắng đang nhập vào hệ thống.
+
+- Ta sử dụng kĩ thuật của iptables để thực hiện việc này:
+
+- Ở đây mình sẽ  đặt  ngưỡng  nếu 4 lần cố gắng truy cập thì log tài khoản :
+```
+iptables -I INPUT -p tcp --dport 22 -i eth0 -m state --state NEW -m recent --set
+iptables -I INPUT -p tcp --dport 22 -i eth0 -m state --state NEW -m recent  --update --seconds 60 --hitcount 4 -j DROP
+```
+- Quy tắc này sẽ chăn một ip nêu nó cố gắng truy cập hơn 4 lần vào hệ thống.
 
 
 
