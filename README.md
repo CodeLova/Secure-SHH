@@ -98,7 +98,7 @@ service ssh restart
 ```
 - Hoặc ta cũng có thể sử dụng iptables để cấm một số ip truy cập vào hệ thống:
 ```
-iptables -A INPUT -p tcp -s 172.16.69.15  --dport 22 -j DROP
+iptables -A INPUT -m state --state NEW -m tcp -p tcp  -s 172.16.69.15 --dport 1710 -j ACCEPT
 ```
 
 4. Hạn chế quyền của user  được sử dụng khi được quyền ssh vào hệ thống:
